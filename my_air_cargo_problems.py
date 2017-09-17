@@ -37,10 +37,12 @@ class AirCargoProblem(Problem):
 
     def get_actions(self):
         """
-        This method creates concrete actions (no variables) for all actions in the problem
-        domain action schema and turns them into complete Action objects as defined in the
-        aimacode.planning module. It is computationally expensive to call this method directly;
-        however, it is called in the constructor and the results cached in the `actions_list` property.
+        This method creates concrete actions (no variables) for all actions in
+        the problem domain action schema and turns them into complete Action
+        objects as defined in the aimacode.planning module. It is
+        computationally expensive to call this method directly; however, it is
+        called in the constructor and the results cached in the `actions_list`
+        property.
 
         Returns:
         ----------
@@ -48,29 +50,74 @@ class AirCargoProblem(Problem):
             list of Action objects
         """
 
-        # TODO create concrete Action objects based on the domain action schema for: Load, Unload, and Fly
-        # concrete actions definition: specific literal action that does not include variables as with the schema
-        # for example, the action schema 'Load(c, p, a)' can represent the concrete actions 'Load(C1, P1, SFO)'
-        # or 'Load(C2, P2, JFK)'.  The actions for the planning problem must be concrete because the problems in
-        # forward search and Planning Graphs must use Propositional Logic
+        # TODO create concrete Action objects based on the domain action schema
+        # for: Load, Unload, and Fly
+        # concrete actions definition: specific literal action that does not
+        # include variables as with the schema for example, the action schema
+        # 'Load(c, p, a)' can represent the concrete actions 'Load(C1, P1, SFO)'
+        # or 'Load(C2, P2, JFK)'.  The actions for the planning problem must be
+        # concrete because the problems in forward search and Planning Graphs
+        # must use Propositional Logic
 
         def load_actions():
             """Create all concrete Load actions and return a list
 
             :return: list of Action objects
             """
-            loads = []
-            # TODO create all load ground actions from the domain Load action
-            return loads
+            return [
+                    Action(
+                        expr(f'Load({c}, {p}, {a})'),
+                        [
+                            [  # positive preconditions
+                                expr(f'At({c}, {a})'),
+                                expr(f'At({p}, {a})'),
+                            ],
+                            [  # negative preconditions
+                            ],
+                        ],
+                        [
+                            [  # positive effects
+                                expr(f'In({c}, {p})'),
+                            ],
+                            [  # negative effects
+                                expr(f'At({c}, {a})'),
+                            ],
+                        ],
+                    )
+                    for c in self.cargos
+                    for p in self.planes
+                    for a in self.airports
+            ]
 
         def unload_actions():
             """Create all concrete Unload actions and return a list
 
             :return: list of Action objects
             """
-            unloads = []
-            # TODO create all Unload ground actions from the domain Unload action
-            return unloads
+            return [
+                    Action(
+                        expr(f'Unload({c}, {p}, {a})'),
+                        [
+                            [  # positive preconditions
+                                expr(f'In({c}, {p})'),
+                                expr(f'At({p}, {a})'),
+                            ],
+                            [  # negative preconditions
+                            ],
+                        ],
+                        [
+                            [  # positive effects
+                                expr(f'At({c}, {a})'),
+                            ],
+                            [  # negative effects
+                                expr(f'In({c}, {p})'),
+                            ],
+                        ],
+                    )
+                    for c in self.cargos
+                    for p in self.planes
+                    for a in self.airports
+            ]
 
         def fly_actions():
             """Create all concrete Fly actions and return a list
@@ -103,9 +150,13 @@ class AirCargoProblem(Problem):
             e.g. 'FTTTFF'
         :return: list of Action objects
         """
-        # TODO implement
-        possible_actions = []
-        return possible_actions
+        kb = PropKB()
+        kb.tell(decode_state(state, self.state_map).sentence())
+        return [
+                action
+                for action in self.get_actions()
+                if action.check_precond(kb, action.args)
+        ]
 
     def result(self, state: str, action: Action):
         """ Return the state that results from executing the given
@@ -187,11 +238,55 @@ def air_cargo_p1() -> AirCargoProblem:
     return AirCargoProblem(cargos, planes, airports, init, goal)
 
 
+def generate_negations(cargos, planes, airports, pos):
+    for plane in planes:
+        for cargo in cargos:
+            ex = expr(f'In({cargo}, {plane})')
+            if ex not in pos:
+                yield ex
+    for airport in airports:
+        for thing in cargos + planes:
+            ex = expr(f'At({thing}, {airport})')
+            if ex not in pos:
+                yield ex
+
+
 def air_cargo_p2() -> AirCargoProblem:
-    # TODO implement Problem 2 definition
-    pass
+    cargos = ['C1', 'C2', 'C3']
+    planes = ['P1', 'P2', 'P3']
+    airports = ['JFK', 'SFO', 'ATL']
+    pos = [expr('At(C1, SFO)'),
+           expr('At(C2, JFK)'),
+           expr('At(C3, ATL)'),
+           expr('At(P1, SFO)'),
+           expr('At(P2, JFK)'),
+           expr('At(P3, ATL)'),
+           ]
+    neg = list(generate_negations(cargos, planes, airports, pos))
+    init = FluentState(pos, neg)
+    goal = [expr('At(C1, JFK)'),
+            expr('At(C2, SFO)'),
+            expr('At(C3, SFO)'),
+            ]
+    return AirCargoProblem(cargos, planes, airports, init, goal)
 
 
 def air_cargo_p3() -> AirCargoProblem:
-    # TODO implement Problem 3 definition
-    pass
+    cargos = ['C1', 'C2', 'C3', 'C4']
+    planes = ['P1', 'P2']
+    airports = ['JFK', 'SFO', 'ATL', 'ORD']
+    pos = [expr('At(C1, SFO)'),
+           expr('At(C2, JFK)'),
+           expr('At(C3, ATL)'),
+           expr('At(C4, ORD)'),
+           expr('At(P1, SFO)'),
+           expr('At(P2, JFK)'),
+           ]
+    neg = list(generate_negations(cargos, planes, airports, pos))
+    init = FluentState(pos, neg)
+    goal = [expr('At(C1, JFK)'),
+            expr('At(C2, SFO)'),
+            expr('At(C3, JFK)'),
+            expr('At(C4, SFO)'),
+            ]
+    return AirCargoProblem(cargos, planes, airports, init, goal)
