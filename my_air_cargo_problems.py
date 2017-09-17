@@ -1,7 +1,7 @@
 from aimacode.logic import PropKB
 from aimacode.planning import Action
 from aimacode.search import (
-    Node, Problem,
+    Node, Problem, iterative_deepening_search
 )
 from aimacode.utils import expr
 from lp_utils import (
@@ -9,6 +9,7 @@ from lp_utils import (
 )
 from my_planning_graph import PlanningGraph
 
+import copy
 from functools import lru_cache
 
 
@@ -167,8 +168,13 @@ class AirCargoProblem(Problem):
         :param action: Action applied
         :return: resulting state after action
         """
-        # TODO implement
-        new_state = FluentState([], [])
+        kb = PropKB()
+        kb.tell(decode_state(state, self.state_map).sentence())
+        action.act(kb, action.args)
+        # kb.clauses has a bunch of negations, but we can just add them as
+        # positive conditions instead of negating them and passing them in the
+        # second argument to FluentState
+        new_state = FluentState(kb.clauses, [])
         return encode_state(new_state, self.state_map)
 
     def goal_test(self, state: str) -> bool:
@@ -208,9 +214,25 @@ class AirCargoProblem(Problem):
         conditions by ignoring the preconditions required for an action to be
         executed.
         """
-        # TODO implement (see Russell-Norvig Ed-3 10.2.3  or Russell-Norvig Ed-2 11.2)
-        count = 0
-        return count
+        # Solve the same problem, but ignore preconditions and negative effects
+        # This seems to work, but doesn't really match what the book suggests,
+        # which is solving the set cover problem
+        new_problem = copy.copy(self)
+        def actions_override(self, state):
+            kb = PropKB()
+            kb.tell(decode_state(state, self.state_map).sentence())
+            actions = self.get_actions()
+            for action in actions:
+                action.precond_pos = []
+                action.precond_neg = []
+                action.effect_rem = []
+            return actions
+
+        new_problem.actions = type(self.actions)(
+                actions_override,
+                new_problem)
+
+        return iterative_deepening_search(new_problem).depth
 
 
 def air_cargo_p1() -> AirCargoProblem:
