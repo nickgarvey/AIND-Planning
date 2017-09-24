@@ -6,7 +6,8 @@ sys.path.append(os.path.join(os.path.dirname(parent), "aimacode"))
 import unittest
 from aimacode.utils import expr
 from aimacode.planning import Action
-from example_have_cake import have_cake
+from example_have_cake import have_cake, HaveCakeProblem
+from lp_utils import FluentState
 from my_planning_graph import (
     PlanningGraph, PgNode_a, PgNode_s, mutexify
 )
@@ -122,6 +123,25 @@ class TestPlanningGraphHeuristics(unittest.TestCase):
 
     def test_levelsum(self):
         self.assertEqual(self.pg.h_levelsum(), 1)
+
+    def test_levelsum2(self):
+        # make sure we can handle negations in the goals
+        problem = HaveCakeProblem(
+                FluentState([], [expr('Have(Cake)'), expr('Eaten(Cake)')]),
+                [expr('Have(Cake)'), expr('~Eaten(Cake)')],
+        )
+        pg = PlanningGraph(problem, problem.initial)
+        self.assertEqual(1, pg.h_levelsum())
+
+    def test_levelsum3(self):
+        # make sure we can handle multiple steps
+        problem = HaveCakeProblem(
+                FluentState([], [expr('Have(Cake)'), expr('Eaten(Cake)')]),
+                [expr('Have(Cake)'), expr('Eaten(Cake)')],
+        )
+        pg = PlanningGraph(problem, problem.initial)
+        # 1. bake 2. eat 3. bake
+        self.assertEqual(3, pg.h_levelsum())
 
 
 if __name__ == '__main__':
