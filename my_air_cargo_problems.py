@@ -9,7 +9,6 @@ from lp_utils import (
 )
 from my_planning_graph import PlanningGraph
 
-import copy
 from functools import lru_cache
 
 
@@ -214,25 +213,9 @@ class AirCargoProblem(Problem):
         conditions by ignoring the preconditions required for an action to be
         executed.
         """
-        # Solve the same problem, but ignore preconditions and negative effects
-        # This seems to work, but doesn't really match what the book suggests,
-        # which is solving the set cover problem
-        new_problem = copy.copy(self)
-        def actions_override(self, state):
-            kb = PropKB()
-            kb.tell(decode_state(state, self.state_map).sentence())
-            actions = self.get_actions()
-            for action in actions:
-                action.precond_pos = []
-                action.precond_neg = []
-                action.effect_rem = []
-            return actions
-
-        new_problem.actions = type(self.actions)(
-                actions_override,
-                new_problem)
-
-        return iterative_deepening_search(new_problem).depth
+        return sum(1
+                   for fluent, value in zip(self.state_map, node.state)
+                   if value == 'F' and fluent in self.goal)
 
 
 def air_cargo_p1() -> AirCargoProblem:
