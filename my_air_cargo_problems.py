@@ -66,21 +66,21 @@ class AirCargoProblem(Problem):
             """
             return [
                     Action(
-                        expr(f'Load({c}, {p}, {a})'),
+                        expr('Load({c}, {p}, {a})'.format(a=a, p=p, c=c)),
                         [
                             [  # positive preconditions
-                                expr(f'At({c}, {a})'),
-                                expr(f'At({p}, {a})'),
+                                expr('At({c}, {a})'.format(a=a, p=p, c=c)),
+                                expr('At({p}, {a})'.format(a=a, p=p, c=c)),
                             ],
                             [  # negative preconditions
                             ],
                         ],
                         [
                             [  # positive effects
-                                expr(f'In({c}, {p})'),
+                                expr('In({c}, {p})'.format(a=a, p=p, c=c)),
                             ],
                             [  # negative effects
-                                expr(f'At({c}, {a})'),
+                                expr('At({c}, {a})'.format(a=a, p=p, c=c)),
                             ],
                         ],
                     )
@@ -96,21 +96,21 @@ class AirCargoProblem(Problem):
             """
             return [
                     Action(
-                        expr(f'Unload({c}, {p}, {a})'),
+                        expr('Unload({c}, {p}, {a})'.format(a=a, p=p, c=c)),
                         [
                             [  # positive preconditions
-                                expr(f'In({c}, {p})'),
-                                expr(f'At({p}, {a})'),
+                                expr('In({c}, {p})'.format(a=a, p=p, c=c)),
+                                expr('At({p}, {a})'.format(a=a, p=p, c=c)),
                             ],
                             [  # negative preconditions
                             ],
                         ],
                         [
                             [  # positive effects
-                                expr(f'At({c}, {a})'),
+                                expr('At({c}, {a})'.format(a=a, p=p, c=c)),
                             ],
                             [  # negative effects
-                                expr(f'In({c}, {p})'),
+                                expr('In({c}, {p})'.format(a=a, p=p, c=c)),
                             ],
                         ],
                     )
@@ -246,12 +246,12 @@ def air_cargo_p1() -> AirCargoProblem:
 def generate_negations(cargos, planes, airports, pos):
     for plane in planes:
         for cargo in cargos:
-            ex = expr(f'In({cargo}, {plane})')
+            ex = expr('In({cargo}, {plane})'.format(cargo=cargo, plane=plane))
             if ex not in pos:
                 yield ex
     for airport in airports:
         for thing in cargos + planes:
-            ex = expr(f'At({thing}, {airport})')
+            ex = expr('At({thing}, {airport})'.format(thing=thing, airport=airport))
             if ex not in pos:
                 yield ex
 
